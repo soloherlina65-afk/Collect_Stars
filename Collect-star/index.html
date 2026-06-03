@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Game Tangkap Star</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background: black; }
+        canvas { display: block; margin: auto; }
+    </style>
+</head>
+<body>
+
+<script>
+const config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    physics: {
+        default: 'arcade',
+        arcade: { gravity: { y: 0 }, debug: false }
+    },
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    }
+};
+
+const game = new Phaser.Game(config);
+
+let player, stars, scoreText, startText, cursors;
+let score = 0;
+let gameStarted = false;
+let isGameOver = false;
+let soundCollect, soundKalah;
+
+function preload() {
+    this.load.image('bg', 'asset/bg.png');
+    this.load.image('player', 'asset/player.png');
+    this.load.image('star', 'asset/star.png');
+    this.load.image('redstar', 'asset/redstar.png');
+    
+    // Load Suara
+    this.load.audio('collect', 'asset/collect.mp3');
+    this.load.audio('kalah', 'asset/kalah.wav');
+}
+
+function create() {
+    let bg = this.add.image(400, 300, 'bg');
+    bg.setDisplaySize(800, 600);
+
+    // Setup Suara
+    soundCollect = this.sound.add('collect');
+    soundKalah = this.sound.add('kalah');
+
+    player = this.physics.add.sprite(400, 520, 'player');
+    player.setDisplaySize(80, 80);
+    player.setCollideWorldBounds(true);
+    player.setVisible(false);
+
+    stars = this.physics.add.group();
+    
+    this.physics.add.overlap(player, stars, collectStar, null, this);
+
+    scoreText = this.add.text(20, 20, 'Score: 0', { fontSize: '32px', fill: '#ffffff' });
+    scoreText.setVisible(false);
+
+    startText = this.add.text(400, 300, 'START GAME', {
+        fontSize: '48px', color: '#ffffff', backgroundColor: '#ff4d6d',
+        padding: { left: 30, right: 30, top: 15, bottom: 15 }
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+    startText.on('pointerdown', () => { startGame.call(this); });
+
+    cursors = this.input.keyboard.createCursorKeys();
+}
+
+function startGame() {
+    gameStarted = true;
+    player.setVisible(true);
+    scoreText.setVisible(true);
+    startText.setVisible(false);
+
+    this.time.addEvent({
+        delay: 2000,
+        callback: spawnStar,
+        callbackScope: this,
+        loop: true
+    });
+}
+
+function spawnStar() {
+    if (isGameOver) return;
+    let x = Phaser.Math.Between(50, 750);
+    let y = Phaser.Math.Between(50, 500);
+    let texture = Math.random() > 0.5 ? 'star' : 'redstar';
+    let star = stars.create(x, y, texture);
+    star.setDisplaySize(40, 40);
+    star.setData('type', texture);
+
+    // Durasi: redstar 3 detik, star kuning 8 detik (3+5)
+    let durasi = (texture === 'redstar') ? 3000 : 8000;
+
+    this.time.delayedCall(durasi, () => {
+        if (star.active) {
+            star.destroy();
+        }
+    }, [], this);
+}
+
+function collectStar(player, star) {
+    if (star.getData('type') === 'redstar') {
+        soundKalah.play();
+        gameOver.call(this);
+    } else {
+        soundCollect.play();
+        star.destroy();
+        score += 10;
+        scoreText.setText('Score: ' + score);
+    }
+}
+
+function gameOver() {
+    isGameOver = true;
+    this.physics.pause();
+    
+    this.add.text(400, 250, 'GAME OVER', { fontSize: '64px', fill: '#ff0000' }).setOrigin(0.5);
+
+    let restartText = this.add.text(400, 350, 'RESTART', { 
+        fontSize: '32px', fill: '#ffffff', backgroundColor: '#4d6dff',
+        padding: { left: 20, right: 20, top: 10, bottom: 10 }
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+    restartText.on('pointerdown', () => { location.reload(); });
+}
+
+function update() {
+    if(!gameStarted || isGameOver) return;
+    player.setVelocity(0);
+    if (cursors.left.isDown) player.setVelocityX(-300);
+    else if (cursors.right.isDown) player.setVelocityX(300);
+    if (cursors.up.isDown) player.setVelocityY(-300);
+    else if (cursors.down.isDown) player.setVelocityY(300);
+}
+</script>
+</body>
+</html>
