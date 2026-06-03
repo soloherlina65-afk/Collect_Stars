@@ -51,7 +51,7 @@ cd Collect-Stars
 Jalankan menggunakan Live Server di VS Code atau buka file index.html di browser.
 📸 Screenshot
 
-Tambahkan screenshot game di bawah ini:
+Screenshot Game:
 
 ![Collect Stars]
 
